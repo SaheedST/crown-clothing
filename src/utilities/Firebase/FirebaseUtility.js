@@ -1,9 +1,9 @@
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
-  signInWithRedirect,
   signInWithPopup,
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
 } from "firebase/auth";
 
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore"; //Create new user record from Google authentication
@@ -28,20 +28,24 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 
-// User authentication
-const provider = new GoogleAuthProvider();
+// User authentication with Google account
+const googlePopupProvider = new GoogleAuthProvider();
 
-provider.setCustomParameters({ prompt: "select_account" });
+googlePopupProvider.setCustomParameters({ prompt: "select_account" });
 
 export const auth = getAuth();
 
-export const signInWithGooglePopup = () => signInWithPopup(auth, provider);
+export const signInWithGooglePopup = () =>
+  signInWithPopup(auth, googlePopupProvider);
 
 // Create new user record from Google authentication
 export const db = getFirestore();
 
-export const createUserFromAuth = async (userAuth) => {
+export const createUserDocFromAuth = async (userAuth, additionalInfo = {}) => {
+  if (!userAuth) return;
+
   const userDocRef = doc(db, "user", userAuth.uid);
+
   const userSnapshot = await getDoc(userDocRef);
 
   console.log(userSnapshot);
@@ -55,7 +59,17 @@ export const createUserFromAuth = async (userAuth) => {
         displayName,
         email,
         createdAt,
+        ...additionalInfo,
       });
-    } catch (error) {console.log('There was a problem creating user', error.message)}
+    } catch (error) {
+      console.log("There was a problem creating user", error.message);
+    }
   }
+};
+
+// User authentication with email and password
+export const createUserWithEmailAndPasswordAuth = async (email, password) => {
+  if (!email && !password) return;
+
+  return await createUserWithEmailAndPassword(auth, email, password);
 };
